@@ -1,1 +1,926 @@
-<!-- Archivo no encontrado: subí mapa_vehiculos.html junto a este archivo -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="Sistema de gestión de vehículos abandonados — Municipio de Colón, Buenos Aires">
+<meta name="theme-color" content="#0d1b2a">
+<meta property="og:title" content="Vehículos Abandonados — Colón">
+<meta property="og:description" content="Mapa interactivo de vehículos abandonados del municipio de Colón, Bs. As.">
+<title>Mapa — Vehículos Abandonados · Colón</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root {
+    --bg:#0e1117; --panel:#161b27; --border:#232c3d;
+    --accent:#f5a623; --red:#e74c3c; --orange:#e67e22;
+    --green:#27ae60; --blue:#2980b9; --text:#e8eaf0; --muted:#6b7a99;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+  header{background:var(--panel);border-bottom:2px solid var(--accent);padding:0 16px;height:60px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:1000}
+  header h1{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;white-space:nowrap}
+  .header-sep{width:1px;height:24px;background:var(--border)}
+  .stat-pill{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:500;color:var(--muted)}
+  .stat-pill b{color:var(--text);font-weight:600}
+  .stat-pill .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .btn-add{margin-left:auto;background:var(--accent);color:#0e1117;border:none;border-radius:6px;padding:7px 16px;font-family:'Syne',sans-serif;font-size:.78rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+  .btn-add:hover{opacity:.85}
+
+  .layout{display:flex;flex:1;overflow:hidden}
+
+  .sidebar{width:320px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+  .sidebar-top{padding:12px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .search-wrap{position:relative}
+  .search-wrap::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:.78rem;pointer-events:none}
+  .search-box{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px 8px 30px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;transition:border-color .2s}
+  .search-box:focus{border-color:var(--accent)}
+  .filter-row{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+  .filter-btn{font-size:.7rem;font-weight:500;padding:3px 9px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+  .filter-btn:hover{border-color:var(--accent);color:var(--text)}
+  .filter-btn.active{background:var(--accent);color:#0e1117;border-color:var(--accent);font-weight:700}
+
+  .case-list{overflow-y:auto;flex:1;padding:6px 0}
+  .case-list::-webkit-scrollbar{width:3px}
+  .case-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+  .case-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;animation:slideIn .2s ease forwards}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+  .case-item:hover{background:rgba(255,255,255,.03)}
+  .case-item.selected{background:rgba(245,166,35,.07);border-left:3px solid var(--accent)}
+  .case-top{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+  .case-num{font-family:'Syne',sans-serif;font-size:.7rem;font-weight:700;color:var(--accent);letter-spacing:1px}
+  .status-badge{font-size:.62rem;font-weight:600;padding:2px 6px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px;margin-left:auto}
+  .case-plate{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;color:#fff;letter-spacing:1px}
+  .case-addr{font-size:.75rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .case-days{font-size:.73rem;font-weight:600;margin-top:4px}
+  .case-photo-strip{display:flex;gap:4px;margin-top:6px}
+  .case-photo-mini{width:34px;height:28px;border-radius:4px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+  .case-photo-mini img{width:100%;height:100%;object-fit:cover}
+  .case-photo-more{width:34px;height:28px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.62rem;color:var(--muted);font-weight:700;flex-shrink:0}
+
+  #map{flex:1;background:#0a0f1a}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal{background:var(--panel);border:1px solid var(--border);border-top:3px solid var(--accent);border-radius:10px;padding:24px;width:480px;max-width:96vw;transform:translateY(10px);transition:transform .2s;max-height:90vh;overflow-y:auto}
+  .modal-overlay.open .modal{transform:translateY(0)}
+  .modal::-webkit-scrollbar{width:3px}
+  .modal::-webkit-scrollbar-thumb{background:var(--border)}
+  .modal h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;margin-bottom:18px;color:var(--accent)}
+  .form-row{margin-bottom:12px}
+  .form-row label{display:block;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px}
+  .form-row input,.form-row select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s}
+  .form-row input:focus,.form-row select:focus{border-color:var(--accent)}
+  .form-row select option{background:#1a2030}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .coord-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modal-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+  .btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:8px 18px;font-family:'Syne',sans-serif;font-size:.78rem;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .15s}
+  .btn-cancel:hover{border-color:var(--muted);color:var(--text)}
+  .btn-save{background:var(--accent);border:none;color:#0e1117;border-radius:6px;padding:8px 20px;font-family:'Syne',sans-serif;font-size:.78rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
+  .btn-save:hover{opacity:.85}
+  .geo-note{font-size:.7rem;color:var(--muted);margin-top:5px;font-style:italic}
+
+  /* PICK MODE BUTTON & BANNER */
+  .btn-pick{width:100%;margin-top:8px;background:rgba(245,166,35,.1);border:2px dashed var(--accent);color:var(--accent);border-radius:6px;padding:10px;font-family:'Syne',sans-serif;font-size:.8rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-pick:hover{background:rgba(245,166,35,.2)}
+  .coords-filled{background:rgba(39,174,96,.12);border-color:#27ae60;color:#27ae60}
+  .pick-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--accent);color:#0e1117;text-align:center;padding:14px 20px;font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;letter-spacing:2px;text-transform:uppercase;display:none;animation:bannerIn .2s ease}
+  .pick-banner span{font-size:.8rem;font-weight:500;letter-spacing:0;margin-left:12px;opacity:.7}
+  .pick-banner-cancel{float:right;background:rgba(0,0,0,.15);border:none;color:#0e1117;border-radius:4px;padding:4px 12px;font-family:'Syne',sans-serif;font-weight:700;font-size:.75rem;cursor:pointer;letter-spacing:1px}
+  @keyframes bannerIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+  .picking-cursor,.picking-cursor .leaflet-container{cursor:crosshair !important}
+
+  /* PHOTOS UPLOAD */
+  .photo-section-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:7px;display:flex;align-items:center;gap:8px}
+  .photo-upload-area{border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden}
+  .photo-upload-area:hover{border-color:var(--accent);background:rgba(245,166,35,.04)}
+  .photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .photo-upload-area .upload-icon{font-size:1.6rem;margin-bottom:5px}
+  .photo-upload-area p{font-size:.78rem;color:var(--muted);line-height:1.5}
+  .photo-upload-area p b{color:var(--accent)}
+  .photo-preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+  .photo-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform .15s}
+  .photo-thumb:hover{transform:scale(1.04)}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .del-photo{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.8);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+  .photo-thumb:hover .del-photo{opacity:1}
+
+  /* POPUP */
+  .leaflet-popup-content-wrapper{background:#1a2436!important;border:1px solid #2e3f5c!important;border-radius:8px!important;box-shadow:0 8px 32px rgba(0,0,0,.5)!important;padding:0!important}
+  .leaflet-popup-tip{background:#1a2436!important}
+  .leaflet-popup-content{margin:0!important;width:auto!important}
+  .popup-inner{padding:14px 16px;min-width:230px}
+  .popup-plate{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:2px;margin-bottom:3px}
+  .popup-addr{font-size:.78rem;color:#7a8faf;margin-bottom:8px}
+  .popup-row{display:flex;justify-content:space-between;font-size:.76rem;color:#9aabc7;margin-bottom:3px}
+  .popup-row span:last-child{color:#cdd;font-weight:500}
+  .popup-photos{display:flex;gap:5px;margin:8px 0;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#2e3f5c transparent;padding-bottom:2px}
+  .popup-photos::-webkit-scrollbar{height:3px}
+  .popup-photos::-webkit-scrollbar-thumb{background:#2e3f5c;border-radius:2px}
+  .popup-photo-thumb{width:68px;height:54px;flex-shrink:0;border-radius:5px;overflow:hidden;cursor:pointer;border:1px solid #2e3f5c;transition:border-color .15s}
+  .popup-photo-thumb:hover{border-color:var(--accent)}
+  .popup-photo-thumb img{width:100%;height:100%;object-fit:cover}
+  .popup-actions{display:flex;gap:6px;margin-top:10px}
+  .popup-btn{flex:1;border:none;border-radius:5px;padding:6px;font-size:.72rem;font-weight:600;cursor:pointer;transition:background .15s}
+  .popup-btn-edit{background:rgba(245,166,35,.15);color:var(--accent);border:1px solid rgba(245,166,35,.3)}
+  .popup-btn-edit:hover{background:rgba(245,166,35,.25)}
+  .popup-btn-del{background:rgba(231,76,60,.12);color:#e74c3c;border:1px solid rgba(231,76,60,.25)}
+  .popup-btn-del:hover{background:rgba(231,76,60,.25)}
+
+  /* LIGHTBOX */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:5000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+  .lightbox.open{opacity:1;pointer-events:all}
+  .lightbox-img{max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.8);object-fit:contain;transform:scale(.95);transition:transform .2s}
+  .lightbox.open .lightbox-img{transform:scale(1)}
+  .lb-close{position:absolute;top:18px;right:22px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.3rem;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .lb-close:hover{background:rgba(255,255,255,.25)}
+  .lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.3rem;width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .lb-nav:hover{background:rgba(255,255,255,.25)}
+  .lb-prev{left:18px}.lb-next{right:18px}
+  .lb-counter{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.55);font-size:.82rem}
+  .lb-info{position:absolute;top:18px;left:22px;color:rgba(255,255,255,.7);font-family:'Syne',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:1px}
+
+  .empty-state{padding:36px 18px;text-align:center;color:var(--muted)}
+  .empty-state .big{font-size:2.2rem;margin-bottom:10px}
+  .empty-state p{font-size:.8rem;line-height:1.6}
+
+  /* ── LOGIN SCREEN ── */
+  .login-screen{position:fixed;inset:0;background:var(--bg);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column}
+  .login-box{background:var(--panel);border:1px solid var(--border);border-top:4px solid var(--accent);border-radius:12px;padding:36px 32px;width:340px;max-width:94vw;animation:fadeUp .3s ease}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .login-logo{font-size:2.4rem;text-align:center;margin-bottom:6px}
+  .login-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px}
+  .login-sub{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:24px}
+  .login-role-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .login-role-btn{padding:14px 10px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text);cursor:pointer;transition:all .2s;text-align:center}
+  .login-role-btn:hover{border-color:var(--accent)}
+  .login-role-btn.selected{border-color:var(--accent);background:rgba(245,166,35,.1)}
+  .login-role-btn .role-icon{font-size:1.6rem;display:block;margin-bottom:4px}
+  .login-role-btn .role-name{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+  .login-role-btn .role-desc{font-size:.68rem;color:var(--muted);margin-top:2px}
+  .login-pass-wrap{margin-bottom:14px;display:none}
+  .login-pass-wrap label{display:block;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px}
+  .login-pass-wrap input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s}
+  .login-pass-wrap input:focus{border-color:var(--accent)}
+  .login-btn{width:100%;background:var(--accent);border:none;border-radius:7px;padding:11px;font-family:'Syne',sans-serif;font-size:.85rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#0e1117;cursor:pointer;transition:opacity .2s}
+  .login-btn:hover{opacity:.85}
+  .login-error{color:#e74c3c;font-size:.78rem;text-align:center;margin-top:8px;display:none}
+
+  /* ── ROLE BADGE in header ── */
+  .role-badge{display:flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:.5px;text-transform:uppercase;padding:4px 10px;border-radius:12px;cursor:pointer;border:1px solid}
+  .role-badge.viewer{background:rgba(107,122,153,.12);border-color:rgba(107,122,153,.3);color:var(--muted)}
+  .role-badge.coord{background:rgba(245,166,35,.12);border-color:rgba(245,166,35,.3);color:var(--accent)}
+
+  /* ── LOCKED elements ── */
+  .locked{opacity:.35;pointer-events:none!important;cursor:not-allowed!important;filter:grayscale(1)}
+  .lock-tooltip{position:relative}
+  .lock-tooltip::after{content:'🔒 Solo coordinador';position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a2436;color:var(--muted);font-size:.7rem;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:100}
+  .lock-tooltip:hover::after{opacity:1}
+
+</style>
+</head>
+<body>
+
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🚗</div>
+    <div class="login-title">Vehículos Abandonados</div>
+    <div class="login-sub">Colón, Buenos Aires · Seleccioná tu rol</div>
+    <div class="login-role-btns">
+      <button class="login-role-btn" id="btnViewer" onclick="selectRole('viewer')">
+        <span class="role-icon">👁️</span>
+        <span class="role-name">Agente</span>
+        <span class="role-desc">Solo lectura</span>
+      </button>
+      <button class="login-role-btn" id="btnCoord" onclick="selectRole('coord')">
+        <span class="role-icon">🎯</span>
+        <span class="role-name">Coordinador</span>
+        <span class="role-desc">Acceso total</span>
+      </button>
+    </div>
+    <div class="login-pass-wrap" id="passWrap">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<header>
+  <span style="font-size:1.3rem;flex-shrink:0">🚗</span>
+  <h1>Vehículos Abandonados · Colón</h1>
+  <div class="header-sep"></div>
+  <div class="stat-pill"><div class="dot" style="background:#e74c3c"></div>Vencidos:<b id="cnt-venc">0</b></div>
+  <div class="stat-pill"><div class="dot" style="background:#e67e22"></div>Urgentes:<b id="cnt-urg">0</b></div>
+  <div class="stat-pill"><div class="dot" style="background:#27ae60"></div>Cerrados:<b id="cnt-ok">0</b></div>
+  <div class="stat-pill"><div class="dot" style="background:#6b7a99"></div>Total:<b id="cnt-total">0</b></div>
+  <div class="header-sep"></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <div class="stat-pill" id="syncPill">
+      <div class="dot" id="syncDot" style="background:#6b7a99"></div>
+      <span id="syncStatus" style="font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">Iniciando...</span>
+    </div>
+    <button id="btnSync" onclick="manualSync()" title="Sincronizar ahora" style="display:none;background:#1b4f72;border:none;border-radius:6px;color:#fff;width:30px;height:30px;cursor:pointer;font-size:.9rem;flex-shrink:0">↻</button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+      <div class="role-badge viewer" id="roleBadge" onclick="logout()" title="Cerrar sesión">
+        <span id="roleIcon">👁️</span><span id="roleLabel">Agente</span>
+      </div>
+      <button id="btnAdd" onclick="openModal()" style="display:none;background:var(--accent);border:none;border-radius:4px;color:#0e1117;padding:3px 10px;font-family:'Syne',sans-serif;font-size:.65rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap;width:100%">+ Agregar caso</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="search-wrap">
+        <input class="search-box" type="text" id="searchInput" placeholder="Buscar dominio, dirección..." oninput="renderList()">
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('TODOS',this)">Todos</button>
+        <button class="filter-btn" onclick="setFilter('ACTIVO',this)">Activo</button>
+        <button class="filter-btn" onclick="setFilter('ACTA LABRADA',this)">Acta</button>
+        <button class="filter-btn" onclick="setFilter('RETIRADO POR GRÚA',this)">Cerrado</button>
+      </div>
+    </div>
+    <div class="case-list" id="caseList"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">➕ Nuevo Caso</h2>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Dominio / Patente *</label>
+        <input type="text" id="f-plate" placeholder="AB 123 CD" style="text-transform:uppercase">
+      </div>
+      <div class="form-row">
+        <label>Agente Asignado</label>
+        <input type="text" id="f-agent" placeholder="Agente A">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Dirección *</label>
+      <input type="text" id="f-addr" placeholder="Av. Costanera 450, entre San Martín y Rivadavia">
+    </div>
+    <div class="form-row">
+      <label>Barrio / Zona</label>
+      <input type="text" id="f-zone" placeholder="Centro Norte">
+    </div>
+    <div class="coord-row">
+      <div class="form-row">
+        <label>Latitud *</label>
+        <input type="number" id="f-lat" placeholder="-33.8965" step="0.000001">
+      </div>
+      <div class="form-row">
+        <label>Longitud *</label>
+        <input type="number" id="f-lng" placeholder="-61.1000" step="0.000001">
+      </div>
+    </div>
+    <div id="coordDisplay" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;font-size:.72rem;color:var(--muted);font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:6px 10px;display:none">
+      <span>LAT: <b id="latDisplay" style="color:var(--accent)">—</b></span>
+      <span>LNG: <b id="lngDisplay" style="color:var(--accent)">—</b></span>
+    </div>
+    <button class="btn-pick" id="btnPickCoord" onclick="startPickMode()" type="button">
+      📍 Tocá aquí para seleccionar punto en el mapa
+    </button>
+    <p class="geo-note" style="margin-top:6px">También podés escribir las coordenadas manualmente o copiarlas desde Google Maps.</p>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="form-row">
+        <label>Fecha Notificación</label>
+        <input type="date" id="f-notif">
+      </div>
+      <div class="form-row">
+        <label>Estado</label>
+        <select id="f-status">
+          <option value="ACTIVO">ACTIVO</option>
+          <option value="RETIRADO VOLUNTARIO">RETIRADO VOLUNTARIO</option>
+          <option value="ACTA LABRADA">ACTA LABRADA</option>
+          <option value="GRÚA COORDINADA">GRÚA COORDINADA</option>
+          <option value="RETIRADO POR GRÚA">RETIRADO POR GRÚA</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Observaciones</label>
+      <input type="text" id="f-obs" placeholder="Estado del vehículo, datos del propietario...">
+    </div>
+
+    <!-- FOTOS -->
+    <div style="margin-top:14px">
+      <div class="photo-section-title">
+        📸 Fotos del vehículo
+        <span id="photo-count-label" style="font-size:.68rem;color:var(--accent);font-style:normal"></span>
+      </div>
+      <div class="photo-upload-area" id="uploadArea">
+        <input type="file" id="f-photos" accept="image/*" multiple onchange="handlePhotoSelect(event)">
+        <div class="upload-icon">📷</div>
+        <p>Tocá para seleccionar fotos<br><b>Desde cámara o galería</b> · Múltiples permitidas</p>
+      </div>
+      <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveCase()">Guardar Caso</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lb-info" id="lbInfo"></div>
+  <button class="lb-close" onclick="closeLightboxBtn()">✕</button>
+  <button class="lb-nav lb-prev" onclick="lbNav(-1,event)">‹</button>
+  <img class="lightbox-img" id="lbImg" src="" alt="">
+  <button class="lb-nav lb-next" onclick="lbNav(1,event)">›</button>
+  <div class="lb-counter" id="lbCounter"></div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let cases = [];
+let activeFilter = 'TODOS';
+let selectedId = null;
+let editingId = null;
+let markers = {};
+let pendingPhotos = []; // base64 strings during form editing
+let lbImages = [];
+let lbIndex = 0;
+
+// ── CONFIGURACIÓN GOOGLE SHEETS SYNC ─────────────────────────────────────
+// ⚠️ PEGÁ ACÁ LA URL de tu Google Apps Script (ver instructivo)
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx8DkoYgy9NVdwLiTtMrmrcveXQa6riTuRiAFyRDuCvC8yp_Gp_mg4wYELK0Rw8phok/exec';
+
+const syncEnabled = () => SCRIPT_URL !== 'TU_URL_AQUI' && SCRIPT_URL !== '';
+
+// ── LOCAL CACHE (respaldo offline) ────────────────────────────────────────
+function saveLocal() {
+  try {
+    // Guardar sin fotos para ahorrar espacio en cache
+    const light = cases.map(c => ({...c, photos: c.photos ? [`[${c.photos.length} foto/s]`] : []}));
+    localStorage.setItem('veh_cases_colon_cache', JSON.stringify(cases));
+  } catch(e) {}
+}
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem('veh_cases_colon_cache') || '[]'); }
+  catch(e) { return []; }
+}
+
+// ── SYNC STATUS UI ────────────────────────────────────────────────────────
+function setSyncStatus(status, msg) {
+  const el = document.getElementById('syncStatus');
+  const dot = document.getElementById('syncDot');
+  const colors = { ok:'#27ae60', syncing:'#f5a623', error:'#e74c3c', offline:'#6b7a99' };
+  el.textContent = msg;
+  dot.style.background = colors[status] || colors.offline;
+}
+
+// ── SAVE → Google Sheets (POST no-cors) ──────────────────────────────────
+async function save() {
+  saveLocal();
+  if (!syncEnabled()) { setSyncStatus('offline','Sin sincronización'); return; }
+  setSyncStatus('syncing','Guardando...');
+  try {
+    const syncData = cases.map(c => ({
+      ...c,
+      photos: (c.photos||[]).slice(0,2)
+    }));
+    // POST con no-cors: el navegador no bloquea pero no podemos leer la respuesta.
+    // Verificamos guardando y luego cargando para confirmar.
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'save', cases: syncData })
+    });
+    // Esperar 1.5s y luego verificar cargando los datos
+    await new Promise(r => setTimeout(r, 1500));
+    const verify = await fetch(SCRIPT_URL + '?action=load&t=' + Date.now());
+    const json = await verify.json();
+    if (json.ok && json.cases && json.cases.length > 0) {
+      setSyncStatus('ok','Guardado ✓ ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+    } else {
+      setSyncStatus('ok','Guardado ✓ ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+    }
+  } catch(e) {
+    setSyncStatus('error','Error al guardar — datos en caché local');
+    console.error('Sync save error:', e);
+  }
+}
+
+// ── LOAD ← Google Sheets ──────────────────────────────────────────────────
+async function load() {
+  if (!syncEnabled()) {
+    setSyncStatus('offline', 'Sin sincronización');
+    return loadLocal();
+  }
+  setSyncStatus('syncing','Cargando datos...');
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=load&t=' + Date.now());
+    const json = await res.json();
+    if (json.ok && json.cases) {
+      setSyncStatus('ok','Sincronizado ✓ ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}));
+      saveLocal();
+      return json.cases;
+    }
+    throw new Error(json.error||'error');
+  } catch(e) {
+    setSyncStatus('error','Sin conexión — usando caché local');
+    return loadLocal();
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x.toISOString().split('T')[0]; }
+const today = new Date().toISOString().split('T')[0];
+
+function getStatusColor(s) {
+  return {ACTIVO:'#3498db','RETIRADO VOLUNTARIO':'#27ae60','ACTA LABRADA':'#e67e22',
+          'GRÚA COORDINADA':'#8e44ad','RETIRADO POR GRÚA':'#27ae60'}[s]||'#6b7a99';
+}
+
+function getDaysInfo(notif, status) {
+  if (!notif) return {days:null,label:'—',color:'#6b7a99'};
+  if (status==='RETIRADO POR GRÚA'||status==='RETIRADO VOLUNTARIO') return {days:null,label:'✅ Cerrado',color:'#27ae60'};
+  const end = new Date(notif); end.setDate(end.getDate()+21);
+  const diff = Math.ceil((end - new Date()) / 86400000);
+  if (diff<0)  return {days:diff, label:`⚠️ Vencido (${Math.abs(diff)}d)`, color:'#e74c3c'};
+  if (diff<=3) return {days:diff, label:`🟠 ${diff} días`, color:'#e67e22'};
+  return {days:diff, label:`🟢 ${diff} días`, color:'#27ae60'};
+}
+
+function formatDate(str) {
+  if (!str) return '—';
+  const [y,m,d] = str.split('-'); return `${d}/${m}/${y}`;
+}
+
+function createMarkerIcon(status, days) {
+  const color = days!==null && days<0 ? '#e74c3c'
+              : days!==null && days<=3 ? '#e67e22'
+              : getStatusColor(status);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
+    <filter id="sh${color.slice(1)}"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,.5)"/></filter>
+    <path d="M16 0C7.16 0 0 7.16 0 16c0 11 16 26 16 26S32 27 32 16C32 7.16 24.84 0 16 0z" fill="${color}" filter="url(#sh${color.slice(1)})"/>
+    <text x="16" y="22" text-anchor="middle" font-size="13" fill="white">🚗</text>
+  </svg>`;
+  return L.divIcon({html:svg, className:'', iconSize:[32,42], iconAnchor:[16,42], popupAnchor:[0,-44]});
+}
+
+// ── PHOTO HANDLING ────────────────────────────────────────────────────────
+function compressImage(file, maxW=800, quality=0.75) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = h * maxW / w; w = maxW; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhotoSelect(e) {
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const b64 = await compressImage(file);
+    pendingPhotos.push(b64);
+  }
+  e.target.value = '';
+  renderPhotoPreview();
+}
+
+function renderPhotoPreview() {
+  const grid = document.getElementById('photoPreviewGrid');
+  const label = document.getElementById('photo-count-label');
+  label.textContent = pendingPhotos.length > 0 ? `${pendingPhotos.length} foto${pendingPhotos.length>1?'s':''}` : '';
+  grid.innerHTML = pendingPhotos.map((src, i) => `
+    <div class="photo-thumb" onclick="openLightboxLocal(${i})">
+      <img src="${src}" alt="foto ${i+1}">
+      <button class="del-photo" onclick="removePhoto(${i},event)">✕</button>
+    </div>`).join('');
+}
+
+function removePhoto(i, e) {
+  e.stopPropagation();
+  pendingPhotos.splice(i, 1);
+  renderPhotoPreview();
+}
+
+function openLightboxLocal(i) {
+  lbImages = pendingPhotos;
+  lbIndex = i;
+  showLightbox();
+}
+
+// ── MAP SETUP ─────────────────────────────────────────────────────────────
+const map = L.map('map', {zoomControl:false, preferCanvas:true}).setView([-33.8965, -61.1000], 14);
+L.control.zoom({position:'bottomright'}).addTo(map);
+// Mapa con fondo oscuro y etiquetas blancas — sin clave API, siempre disponible
+const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
+
+// Aplicar filtro CSS para oscurecer el mapa y resaltar etiquetas en blanco
+const mapEl = document.getElementById('map');
+mapEl.style.filter = 'invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1) saturate(0.6)';
+
+// ── RENDER MARKERS ────────────────────────────────────────────────────────
+let _rmTimer = null;
+function renderMarkers() { clearTimeout(_rmTimer); _rmTimer = setTimeout(_renderMarkersNow, 80); }
+function _renderMarkersNow() {
+  Object.values(markers).forEach(m => map.removeLayer(m));
+  markers = {};
+  cases.forEach(c => {
+    if (!c.lat || !c.lng) return;
+    const di = getDaysInfo(c.notif, c.status);
+    const sc = getStatusColor(c.status);
+    const marker = L.marker([c.lat, c.lng], {icon: createMarkerIcon(c.status, di.days)});
+    const photos = c.photos || [];
+    const photoStrip = photos.length
+      ? `<div class="popup-photos">${photos.map((p,i)=>`
+          <div class="popup-photo-thumb" onclick="openLightboxCase(${c.id},${i})">
+            <img src="${p}" alt="foto">
+          </div>`).join('')}</div>`
+      : '';
+    marker.bindPopup(`
+      <div class="popup-inner">
+        <div class="popup-plate">${c.plate}</div>
+        <div class="popup-addr">📍 ${c.addr}${c.zone?' · '+c.zone:''}</div>
+        ${photoStrip}
+        <div class="popup-row"><span>Estado</span><span style="color:${sc};font-weight:700">${c.status}</span></div>
+        <div class="popup-row"><span>Plazo</span><span style="color:${di.color}">${di.label}</span></div>
+        ${c.agent?`<div class="popup-row"><span>Agente</span><span>${c.agent}</span></div>`:''}
+        ${c.notif?`<div class="popup-row"><span>Notif.</span><span>${formatDate(c.notif)}</span></div>`:''}
+        ${c.obs?`<div class="popup-row"><span>Obs.</span><span style="max-width:120px;text-align:right;word-break:break-word">${c.obs}</span></div>`:''}
+        ${photos.length?`<div class="popup-row"><span>📸 Fotos</span><span style="color:var(--accent)">${photos.length} registrada${photos.length>1?'s':''}</span></div>`:''}
+        ${canEdit() ? `<div class="popup-actions">
+          <button class="popup-btn popup-btn-edit" onclick="openModal(${c.id})">✏️ Editar</button>
+          <button class="popup-btn popup-btn-del" onclick="deleteCase(${c.id})">🗑 Eliminar</button>
+        </div>` : ''}
+      </div>`, {maxWidth:300});
+    marker.on('click', () => selectCase(c.id));
+    marker.addTo(map);
+    markers[c.id] = marker;
+  });
+}
+
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────
+function openLightboxCase(caseId, idx) {
+  const c = cases.find(x => x.id === caseId);
+  if (!c || !c.photos) return;
+  lbImages = c.photos;
+  lbIndex = idx;
+  document.getElementById('lbInfo').textContent = c.plate;
+  showLightbox();
+}
+
+function showLightbox() {
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lbImg').src = lbImages[lbIndex];
+  document.getElementById('lbCounter').textContent = `${lbIndex+1} / ${lbImages.length}`;
+  lb.classList.add('open');
+}
+
+function closeLightboxBtn() { document.getElementById('lightbox').classList.remove('open'); }
+function closeLightbox(e)   { if (e.target === document.getElementById('lightbox')) closeLightboxBtn(); }
+function lbNav(dir, e)      { e.stopPropagation(); lbIndex = (lbIndex+dir+lbImages.length)%lbImages.length; showLightbox(); }
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lightbox').classList.contains('open')) return;
+  if (e.key==='ArrowRight') lbNav(1,{stopPropagation:()=>{}});
+  if (e.key==='ArrowLeft')  lbNav(-1,{stopPropagation:()=>{}});
+  if (e.key==='Escape')     closeLightboxBtn();
+});
+
+// ── RENDER LIST ───────────────────────────────────────────────────────────
+function renderList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = cases.filter(c => {
+    const mf = activeFilter==='TODOS' || c.status===activeFilter;
+    const mq = !q || c.plate.toLowerCase().includes(q) || c.addr.toLowerCase().includes(q) || (c.zone||'').toLowerCase().includes(q);
+    return mf && mq;
+  });
+  const list = document.getElementById('caseList');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">🗺️</div><p>No hay casos que coincidan.<br>Usá <b>"+ Agregar Caso"</b> para el primero.</p></div>`;
+    updateStats(); return;
+  }
+  list.innerHTML = filtered.map(c => {
+    const di = getDaysInfo(c.notif, c.status);
+    const sc = getStatusColor(c.status);
+    const photos = c.photos || [];
+    const photoStrip = photos.length ? `
+      <div class="case-photo-strip">
+        ${photos.slice(0,3).map(p=>`<div class="case-photo-mini"><img src="${p}" alt=""></div>`).join('')}
+        ${photos.length>3?`<div class="case-photo-more">+${photos.length-3}</div>`:''}
+      </div>` : '';
+    return `<div class="case-item${c.id===selectedId?' selected':''}" onclick="selectCase(${c.id})">
+      <div class="case-top">
+        <span class="case-num">#${String(c.id).padStart(3,'0')}</span>
+        <span class="status-badge" style="background:${sc}22;color:${sc};border:1px solid ${sc}44">${c.status}</span>
+      </div>
+      <div class="case-plate">${c.plate}</div>
+      <div class="case-addr">📍 ${c.addr}</div>
+      ${c.agent?`<div class="case-addr" style="margin-top:1px">👤 ${c.agent}</div>`:''}
+      <div class="case-days" style="color:${di.color}">${di.label}</div>
+      ${photoStrip}
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+function updateStats() {
+  const venc = cases.filter(c=>{const d=getDaysInfo(c.notif,c.status);return d.days!==null&&d.days<0}).length;
+  const urg  = cases.filter(c=>{const d=getDaysInfo(c.notif,c.status);return d.days!==null&&d.days>=0&&d.days<=3}).length;
+  const ok   = cases.filter(c=>c.status==='RETIRADO POR GRÚA'||c.status==='RETIRADO VOLUNTARIO').length;
+  document.getElementById('cnt-venc').textContent = venc;
+  document.getElementById('cnt-urg').textContent  = urg;
+  document.getElementById('cnt-ok').textContent   = ok;
+  document.getElementById('cnt-total').textContent = cases.length;
+}
+
+// ── SELECT CASE ───────────────────────────────────────────────────────────
+function selectCase(id) {
+  selectedId = id;
+  renderList();
+  const c = cases.find(x=>x.id===id);
+  if (c?.lat && c?.lng) {
+    map.flyTo([c.lat, c.lng], 17, {duration:0.7});
+    if (markers[id]) setTimeout(()=>markers[id].openPopup(), 400);
+  }
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────
+function openModal(id=null) {
+  if (!canEdit()) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = id ? '✏️ Editar Caso' : '➕ Nuevo Caso';
+  pendingPhotos = [];
+  // Reset coord picker
+  const btn = document.getElementById('btnPickCoord');
+  btn.textContent = '📍 Tocá aquí para seleccionar punto en el mapa';
+  btn.classList.remove('coords-filled');
+  if (window._pickMarker) { map.removeLayer(window._pickMarker); window._pickMarker = null; }
+  if (id) {
+    const c = cases.find(x=>x.id===id);
+    document.getElementById('f-plate').value  = c.plate  || '';
+    document.getElementById('f-agent').value  = c.agent  || '';
+    document.getElementById('f-addr').value   = c.addr   || '';
+    document.getElementById('f-zone').value   = c.zone   || '';
+    document.getElementById('f-lat').value    = c.lat    || '';
+    document.getElementById('f-lng').value    = c.lng    || '';
+    document.getElementById('f-notif').value  = c.notif  || '';
+    document.getElementById('f-status').value = c.status || 'ACTIVO';
+    document.getElementById('f-obs').value    = c.obs    || '';
+    pendingPhotos = [...(c.photos || [])];
+  } else {
+    ['f-plate','f-agent','f-addr','f-zone','f-lat','f-lng','f-obs'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('f-status').value = 'ACTIVO';
+    document.getElementById('f-notif').value  = today;
+  }
+  renderPhotoPreview();
+  const ov = document.getElementById('modalOverlay');
+  ov.style.opacity = '';
+  ov.style.pointerEvents = '';
+  ov.classList.add('open');
+  map.closePopup();
+}
+
+function closeModal() {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('open');
+  overlay.style.opacity = '';
+  overlay.style.pointerEvents = '';
+  editingId = null; pendingPhotos = [];
+}
+
+function saveCase() {
+  const plate = document.getElementById('f-plate').value.trim().toUpperCase();
+  const addr  = document.getElementById('f-addr').value.trim();
+  const lat   = parseFloat(document.getElementById('f-lat').value);
+  const lng   = parseFloat(document.getElementById('f-lng').value);
+  if (!plate) { alert('Ingresá el dominio/patente.'); return; }
+  if (!addr)  { alert('Ingresá la dirección.'); return; }
+  if (isNaN(lat)||isNaN(lng)) { alert('Ingresá latitud y longitud válidas.\n\nTip: hacé clic en el mapa con el formulario abierto.'); return; }
+  const data = {
+    plate, addr, lat, lng,
+    agent:  document.getElementById('f-agent').value.trim(),
+    zone:   document.getElementById('f-zone').value.trim(),
+    notif:  document.getElementById('f-notif').value,
+    status: document.getElementById('f-status').value,
+    obs:    document.getElementById('f-obs').value.trim(),
+    photos: [...pendingPhotos],
+  };
+  if (editingId) {
+    const idx = cases.findIndex(c=>c.id===editingId);
+    cases[idx] = {...cases[idx], ...data};
+  } else {
+    const maxId = cases.length ? Math.max(...cases.map(c=>c.id)) : 0;
+    cases.push({id: maxId+1, ...data});
+  }
+  save(); closeModal(); renderMarkers(); renderList();
+  const target = editingId || cases[cases.length-1].id;
+  setTimeout(() => selectCase(target), 100);
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────
+function deleteCase(id) {
+  if (!canEdit()) return;
+  if (!confirm('¿Eliminar este caso del mapa?')) return;
+  if (markers[id]) map.removeLayer(markers[id]);
+  delete markers[id];
+  cases = cases.filter(c=>c.id!==id);
+  if (selectedId===id) selectedId = null;
+  save(); renderList(); map.closePopup();
+}
+
+// ── MAP CLICK = fill coords ───────────────────────────────────────────────
+// ── PICK MODE ─────────────────────────────────────────────────────────────
+let pickModeActive = false;
+let savedScrollTop = 0;
+
+function startPickMode() {
+  pickModeActive = true;
+  // Hide modal, show banner, activate cursor
+  document.getElementById('modalOverlay').style.opacity = '0';
+  document.getElementById('modalOverlay').style.pointerEvents = 'none';
+  document.getElementById('pickBanner').style.display = 'block';
+  document.getElementById('map').classList.add('picking-cursor');
+}
+
+function cancelPickMode() {
+  pickModeActive = false;
+  document.getElementById('pickBanner').style.display = 'none';
+  document.getElementById('map').classList.remove('picking-cursor');
+  document.getElementById('modalOverlay').style.opacity = '1';
+  document.getElementById('modalOverlay').style.pointerEvents = 'all';
+}
+
+map.on('click', e => {
+  if (pickModeActive) {
+    const lat = e.latlng.lat.toFixed(6);
+    const lng = e.latlng.lng.toFixed(6);
+    // Fill inputs
+    document.getElementById('f-lat').value = lat;
+    document.getElementById('f-lng').value = lng;
+    // Update display
+    document.getElementById('latDisplay').textContent = lat;
+    document.getElementById('lngDisplay').textContent = lng;
+    document.getElementById('coordDisplay').style.display = 'grid';
+    // Update button appearance
+    const btn = document.getElementById('btnPickCoord');
+    btn.textContent = '✅ Coordenadas cargadas — tocá para cambiar';
+    btn.classList.add('coords-filled');
+    // Show a temporary marker
+    if (window._pickMarker) map.removeLayer(window._pickMarker);
+    window._pickMarker = L.circleMarker([e.latlng.lat, e.latlng.lng], {
+      radius: 10, color: '#f5a623', fillColor: '#f5a623', fillOpacity: .4, weight: 2
+    }).addTo(map);
+    // Restore modal
+    cancelPickMode();
+  }
+});
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// ── MANUAL SYNC ──────────────────────────────────────────────────────────
+async function manualSync() {
+  const loaded = await load();
+  if (loaded && loaded.length) {
+    cases = loaded;
+    renderMarkers();
+    renderList();
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+(async () => {
+  const loaded = await load();
+  cases = loaded && loaded.length ? loaded : [];
+  renderMarkers();
+  renderList();
+  const valid = cases.filter(c=>c.lat&&c.lng);
+  if (valid.length > 1) {
+    map.fitBounds(L.latLngBounds(valid.map(c=>[c.lat,c.lng])), {padding:[40,40]});
+  } else if (valid.length === 1) {
+    map.setView([valid[0].lat, valid[0].lng], 15);
+  } else {
+    map.setView([-33.8965,-61.1000], 14);
+  }
+})();
+
+// ── ROLES & AUTH ──────────────────────────────────────────────────────────
+// ⚠️ Cambiá esta contraseña por la que quieras usar
+const COORD_PASSWORD = 'colon2026';
+const VIEWER_PASSWORD = 'vehiculos2026';
+
+let currentRole = null; // 'viewer' | 'coord'
+let selectedLoginRole = null;
+
+function selectRole(role) {
+  selectedLoginRole = role;
+  document.getElementById('btnViewer').classList.toggle('selected', role === 'viewer');
+  document.getElementById('btnCoord').classList.toggle('selected', role === 'coord');
+  document.getElementById('passWrap').style.display = 'block';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+}
+
+function doLogin() {
+  if (!selectedLoginRole) { selectRole('viewer'); }
+  const role = selectedLoginRole || 'viewer';
+  const pass = document.getElementById('loginPass').value;
+  const expectedPass = role === 'coord' ? COORD_PASSWORD : VIEWER_PASSWORD;
+  if (pass !== expectedPass) {
+    document.getElementById('loginError').style.display = 'block';
+    document.getElementById('loginPass').focus();
+    return;
+  }
+  currentRole = role;
+  sessionStorage.setItem('mapa_role', role);
+  document.getElementById('loginScreen').style.display = 'none';
+  applyRole(role);
+}
+
+function logout() {
+  if (!confirm('¿Cerrar sesión y volver al inicio?')) return;
+  sessionStorage.removeItem('mapa_role');
+  currentRole = null;
+  // Reset login UI
+  selectedLoginRole = null;
+  document.getElementById('btnViewer').classList.remove('selected');
+  document.getElementById('btnCoord').classList.remove('selected');
+  document.getElementById('passWrap').style.display = 'none';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  applyRole(null);
+}
+
+function applyRole(role) {
+  const isCoord = role === 'coord';
+  // Header badge
+  const badge = document.getElementById('roleBadge');
+  badge.className = 'role-badge ' + (isCoord ? 'coord' : 'viewer');
+  document.getElementById('roleIcon').textContent = isCoord ? '🎯' : '👁️';
+  document.getElementById('roleLabel').textContent = isCoord ? 'Coordinador' : 'Agente';
+  // Buttons: add/sync only for coord
+  const addBtn  = document.getElementById('btnAdd');
+  const syncBtn = document.getElementById('btnSync');
+  if (addBtn)  addBtn.style.display  = isCoord ? 'inline-flex' : 'none';
+  if (syncBtn) syncBtn.style.display = isCoord ? 'inline-flex' : 'none';
+  // Popup edit/delete buttons — handled in renderMarkers via canEdit()
+  renderMarkers();
+  renderList();
+}
+
+function canEdit() { return currentRole === 'coord'; }
+
+// ── Check session on load ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const savedRole = sessionStorage.getItem('mapa_role');
+  if (savedRole) {
+    selectedLoginRole = savedRole;
+    doLogin();
+  }
+});
+
+</script>
+<!-- PICK BANNER -->
+<div class="pick-banner" id="pickBanner">
+  📍 HACÉ CLIC EN EL MAPA PARA MARCAR LA UBICACIÓN
+  <span>El formulario se reabrirá automáticamente</span>
+  <button class="pick-banner-cancel" onclick="cancelPickMode()">✕ CANCELAR</button>
+</div>
+
+</body>
+</html>
