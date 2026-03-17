@@ -970,6 +970,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+// ── MOBILE NAVIGATION ─────────────────────────────────────────────────────
+function isMobile() { return window.innerWidth <= 768; }
+
+function mobileShowMap() {
+  if (!isMobile()) return;
+  document.querySelector('.sidebar').classList.remove('mobile-open');
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnBtnMapa').classList.add('active');
+  setTimeout(() => map.invalidateSize(), 50);
+}
+
+function mobileShowList() {
+  if (!isMobile()) return;
+  document.querySelector('.sidebar').classList.add('mobile-open');
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnBtnCasos').classList.add('active');
+}
+
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    const sb = document.querySelector('.sidebar');
+    sb.classList.remove('mobile-open');
+    sb.style.height = '';
+  }
+});
+
 </script>
 <!-- PICK BANNER -->
 <div class="pick-banner" id="pickBanner">
