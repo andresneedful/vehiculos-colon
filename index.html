@@ -179,6 +179,62 @@
   .lock-tooltip::after{content:'🔒 Solo coordinador';position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a2436;color:var(--muted);font-size:.7rem;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:100}
   .lock-tooltip:hover::after{opacity:1}
 
+
+  /* ══ RESPONSIVE MÓVIL ══════════════════════════════ */
+  @media (max-width: 768px) {
+    body { padding-bottom: 56px; }
+    header {
+      height: 48px !important; min-height: 48px !important;
+      padding: 0 8px !important; gap: 5px !important;
+      flex-wrap: nowrap !important; overflow: hidden;
+    }
+    header h1 { display: none !important; }
+    .header-sep { display: none !important; }
+    .stat-pill { padding: 2px 6px !important; font-size: .6rem !important; gap: 3px !important; flex-shrink: 1; min-width: 0; }
+    .stat-pill .dot { width: 5px !important; height: 5px !important; }
+    #syncPill { display: none !important; }
+    #btnSync  { display: none !important; }
+    #btnAdd   { display: none !important; }
+    .role-badge { font-size: .6rem !important; padding: 3px 7px !important; }
+    .layout { flex-direction: column !important; }
+    .sidebar {
+      width: 100% !important; height: 0 !important;
+      overflow: hidden !important; border-right: none !important;
+      border-bottom: 1px solid var(--border);
+      transition: height .25s ease; flex-shrink: 0 !important;
+    }
+    .sidebar.mobile-open { height: 50vh !important; overflow-y: auto !important; }
+    #map { flex: 1 !important; width: 100% !important; min-height: 200px; }
+    .modal-overlay { align-items: flex-end !important; }
+    .modal {
+      width: 100% !important; max-width: 100% !important;
+      border-radius: 16px 16px 0 0 !important;
+      max-height: 90vh !important; padding: 16px !important;
+    }
+    .mobile-nav { display: block !important; }
+  }
+
+  /* ══ BARRA NAV INFERIOR ════════════════════════════ */
+  .mobile-nav {
+    display: none; position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 56px; background: var(--panel);
+    border-top: 2px solid var(--border); z-index: 1500;
+  }
+  .mobile-nav-inner { display: flex; height: 100%; }
+  .mnav-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    transition: color .15s; font-family: 'DM Sans', sans-serif; padding: 0;
+  }
+  .mnav-btn.active { color: var(--accent); }
+  .mnav-btn .mni { font-size: 1.2rem; line-height: 1; }
+  .mnav-btn .mnl { font-size: .58rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .mnav-btn.coord-only { display: none; }
+  .mnav-btn.coord-only.visible { display: flex; }
+
 </style>
 </head>
 <body>
@@ -920,6 +976,25 @@ document.addEventListener('DOMContentLoaded', () => {
   📍 HACÉ CLIC EN EL MAPA PARA MARCAR LA UBICACIÓN
   <span>El formulario se reabrirá automáticamente</span>
   <button class="pick-banner-cancel" onclick="cancelPickMode()">✕ CANCELAR</button>
+</div>
+
+
+<!-- BARRA NAV MÓVIL -->
+<div class="mobile-nav" id="mobileNav">
+  <div class="mobile-nav-inner">
+    <button class="mnav-btn active" id="mnBtnMapa" onclick="mobileShowMap()">
+      <span class="mni">🗺️</span><span class="mnl">Mapa</span>
+    </button>
+    <button class="mnav-btn" id="mnBtnCasos" onclick="mobileShowList()">
+      <span class="mni">📋</span><span class="mnl">Casos</span>
+    </button>
+    <button class="mnav-btn coord-only" id="mnBtnAdd" onclick="openModal()">
+      <span class="mni">➕</span><span class="mnl">Agregar</span>
+    </button>
+    <button class="mnav-btn" onclick="manualSync()">
+      <span class="mni">↻</span><span class="mnl">Sync</span>
+    </button>
+  </div>
 </div>
 
 </body>
