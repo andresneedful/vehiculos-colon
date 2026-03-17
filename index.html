@@ -178,116 +178,6 @@
   .lock-tooltip::after{content:'🔒 Solo coordinador';position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#1a2436;color:var(--muted);font-size:.7rem;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:100}
   .lock-tooltip:hover::after{opacity:1}
 
-
-  /* ════════════════════════════════════════════════════
-     RESPONSIVE — CELULAR
-  ════════════════════════════════════════════════════ */
-  @media (max-width: 768px) {
-
-    /* BODY */
-    body { overflow: hidden; }
-
-    /* HEADER: más compacto */
-    header {
-      height: auto !important;
-      min-height: 50px;
-      padding: 6px 10px !important;
-      gap: 6px !important;
-      flex-wrap: wrap;
-    }
-    header h1 {
-      font-size: .72rem !important;
-      letter-spacing: 1px;
-      white-space: nowrap;
-    }
-    .header-sep { display: none; }
-    .stat-pill {
-      padding: 3px 7px !important;
-      font-size: .65rem !important;
-      gap: 4px !important;
-    }
-    .stat-pill .dot { width: 6px !important; height: 6px !important; }
-
-    /* LAYOUT: columna en lugar de fila */
-    .layout {
-      flex-direction: column !important;
-    }
-
-    /* SIDEBAR: oculto por defecto, visible al tocar "Casos" */
-    .sidebar {
-      width: 100% !important;
-      height: 0;
-      overflow: hidden;
-      border-right: none !important;
-      border-bottom: 1px solid var(--border);
-      transition: height .25s ease;
-      flex-shrink: 0;
-    }
-    .sidebar.mobile-open {
-      height: 45vh;
-      overflow: hidden;
-    }
-
-    /* MAP: ocupa el resto */
-    #map {
-      flex: 1 !important;
-      min-height: 0;
-    }
-
-    /* MODAL: sube desde abajo como sheet */
-    .modal-overlay {
-      align-items: flex-end !important;
-    }
-    .modal {
-      width: 100% !important;
-      max-width: 100% !important;
-      border-radius: 16px 16px 0 0 !important;
-      max-height: 92vh !important;
-      padding: 20px 16px !important;
-    }
-
-    /* BARRA NAVEGACION INFERIOR */
-    .mobile-nav {
-      display: flex !important;
-    }
-    body { padding-bottom: 56px; }
-  }
-
-  /* ── BARRA NAV INFERIOR (oculta en PC) ── */
-  .mobile-nav {
-    display: none;
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: 56px;
-    background: var(--panel);
-    border-top: 2px solid var(--border);
-    z-index: 1500;
-  }
-  .mobile-nav-inner {
-    display: flex;
-    height: 100%;
-  }
-  .mnav-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    transition: color .15s;
-    font-family: 'DM Sans', sans-serif;
-    padding: 0;
-  }
-  .mnav-btn.active { color: var(--accent); }
-  .mnav-btn .mni { font-size: 1.2rem; line-height: 1; }
-  .mnav-btn .mnl { font-size: .58rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-  .mnav-btn.coord-only { display: none; }
-  .mnav-btn.coord-only.visible { display: flex; }
-
 </style>
 </head>
 <body>
@@ -771,6 +661,8 @@ function selectCase(id) {
     map.flyTo([c.lat, c.lng], 17, {duration:0.7});
     if (markers[id]) setTimeout(()=>markers[id].openPopup(), 400);
   }
+  // En móvil, volver al mapa al seleccionar un caso
+  if (isMobile()) setTimeout(mobileShowMap, 100);
 }
 
 // ── FILTER ────────────────────────────────────────────────────────────────
@@ -997,11 +889,14 @@ function applyRole(role) {
   badge.className = 'role-badge ' + (isCoord ? 'coord' : 'viewer');
   document.getElementById('roleIcon').textContent = isCoord ? '🎯' : '👁️';
   document.getElementById('roleLabel').textContent = isCoord ? 'Coordinador' : 'Agente';
-  // Buttons: add/sync only for coord
+  // Botón agregar — header
   const addBtn  = document.getElementById('btnAdd');
   const syncBtn = document.getElementById('btnSync');
   if (addBtn)  addBtn.style.display  = isCoord ? 'inline-flex' : 'none';
   if (syncBtn) syncBtn.style.display = isCoord ? 'inline-flex' : 'none';
+  // Botón agregar — barra móvil
+  const mnAdd = document.getElementById('mnBtnAdd');
+  if (mnAdd) mnAdd.classList.toggle('visible', isCoord);
   // Popup edit/delete buttons — handled in renderMarkers via canEdit()
   renderMarkers();
   renderList();
@@ -1018,55 +913,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-
-// ── MOBILE NAVIGATION ─────────────────────────────────────────────────────
-function isMobile() { return window.innerWidth <= 768; }
-
-function mobileShowMap() {
-  if (!isMobile()) return;
-  document.querySelector('.sidebar').classList.remove('mobile-open');
-  document.getElementById('map').style.display = 'block';
-  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('mnBtnMapa').classList.add('active');
-  setTimeout(() => map.invalidateSize(), 50);
-}
-
-function mobileShowList() {
-  if (!isMobile()) return;
-  document.querySelector('.sidebar').classList.add('mobile-open');
-  document.getElementById('map').style.display = 'block';
-  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('mnBtnCasos').classList.add('active');
-}
-
-// Patch applyRole para mostrar botón agregar en nav móvil
-const _origApplyRole = typeof applyRole === 'function' ? applyRole : null;
-function applyRole(role) {
-  if (_origApplyRole) _origApplyRole(role);
-  const mnAdd = document.getElementById('mnBtnAdd');
-  if (mnAdd) {
-    if (role === 'coord') mnAdd.classList.add('visible');
-    else mnAdd.classList.remove('visible');
-  }
-}
-
-// Al hacer clic en un caso en mobile → mostrar mapa
-const _origSelectCase = typeof selectCase === 'function' ? selectCase : null;
-function selectCase(id) {
-  if (_origSelectCase) _origSelectCase(id);
-  if (isMobile()) {
-    setTimeout(mobileShowMap, 100);
-  }
-}
-
-// Resize handler: si vuelve a pantalla grande, restaurar layout
-window.addEventListener('resize', () => {
-  if (!isMobile()) {
-    document.querySelector('.sidebar').classList.remove('mobile-open');
-    document.querySelector('.sidebar').style.height = '';
-  }
-});
-
 </script>
 <!-- PICK BANNER -->
 <div class="pick-banner" id="pickBanner">
@@ -1075,25 +921,5 @@ window.addEventListener('resize', () => {
   <button class="pick-banner-cancel" onclick="cancelPickMode()">✕ CANCELAR</button>
 </div>
 
-
-<!-- BARRA NAV MÓVIL -->
-<div class="mobile-nav" id="mobileNav">
-  <div class="mobile-nav-inner">
-    <button class="mnav-btn active" id="mnBtnMapa" onclick="mobileShowMap()">
-      <span class="mni">🗺️</span><span class="mnl">Mapa</span>
-    </button>
-    <button class="mnav-btn" id="mnBtnCasos" onclick="mobileShowList()">
-      <span class="mni">📋</span><span class="mnl">Casos</span>
-    </button>
-    <button class="mnav-btn coord-only" id="mnBtnAdd" onclick="openModal()">
-      <span class="mni">➕</span><span class="mnl">Agregar</span>
-    </button>
-    <button class="mnav-btn" onclick="manualSync()">
-      <span class="mni">↻</span><span class="mnl">Sincronizar</span>
-    </button>
-  </div>
-</div>
-
 </body>
 </html>
-
