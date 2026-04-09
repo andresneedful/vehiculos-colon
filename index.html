@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Mapa — Vehículos Abandonados · Colón</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
@@ -14,7 +14,8 @@
     --green:#27ae60; --blue:#2980b9; --text:#e8eaf0; --muted:#6b7a99;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  html{overflow:hidden;width:100%}
+  body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);height:100vh;width:100%;display:flex;flex-direction:column;overflow:hidden;position:fixed;left:0;top:0}
 
   header{background:var(--panel);border-bottom:2px solid var(--accent);padding:0 16px;height:60px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:1000}
   header h1{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;white-space:nowrap}
@@ -146,8 +147,8 @@
   .empty-state p{font-size:.8rem;line-height:1.6}
 
   /* ── LOGIN SCREEN ── */
-  .login-screen{position:fixed;inset:0;background:var(--bg);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column}
-  .login-box{background:var(--panel);border:1px solid var(--border);border-top:4px solid var(--accent);border-radius:12px;padding:36px 32px;width:340px;max-width:94vw;animation:fadeUp .3s ease}
+  .login-screen{position:fixed;inset:0;background:var(--bg);z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;width:100%;overflow:hidden}
+  .login-box{background:var(--panel);border:1px solid var(--border);border-top:4px solid var(--accent);border-radius:12px;padding:28px 20px;width:340px;max-width:92vw;margin:0 auto;animation:fadeUp .3s ease}
   @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
   .login-logo{font-size:2.4rem;text-align:center;margin-bottom:6px}
   .login-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#fff;text-align:center;margin-bottom:4px}
@@ -179,35 +180,60 @@
   .lock-tooltip:hover::after{opacity:1}
 
 
-  /* ══ FORMULARIO DE CAMPO (AGENTE) ════════════════════ */
-  .campo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:3000;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
-  .campo-overlay.open{opacity:1;pointer-events:all}
-  .campo-sheet{background:var(--panel);border:1px solid var(--border);border-top:4px solid #27ae60;border-radius:16px 16px 0 0;padding:20px 18px 28px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;transform:translateY(40px);transition:transform .25s}
-  .campo-overlay.open .campo-sheet{transform:translateY(0)}
-  .campo-sheet h2{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#27ae60;margin-bottom:4px}
-  .campo-sheet .campo-sub{font-size:.75rem;color:var(--muted);margin-bottom:16px}
-  .gps-box{border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:.82rem;border:1px solid}
-  .gps-box.loading{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.3);color:#d4a015}
-  .gps-box.ok{background:rgba(39,174,96,.08);border-color:rgba(39,174,96,.3);color:#27ae60}
-  .gps-box.error{background:rgba(231,76,60,.08);border-color:rgba(231,76,60,.3);color:#e74c3c}
-  .gps-icon{font-size:1.3rem;flex-shrink:0}
-  .campo-foto-btn{width:100%;background:rgba(245,166,35,.08);border:2px dashed var(--accent);border-radius:8px;padding:18px;text-align:center;cursor:pointer;position:relative;overflow:hidden;transition:background .2s;margin-bottom:14px}
-  .campo-foto-btn:hover{background:rgba(245,166,35,.15)}
-  .campo-foto-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-  .campo-foto-btn .foto-icon{font-size:2rem;display:block;margin-bottom:4px}
-  .campo-foto-btn p{font-size:.8rem;color:var(--muted)}
-  .campo-foto-btn p b{color:var(--accent)}
-  .campo-foto-preview{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-  .campo-foto-thumb{width:70px;height:70px;border-radius:8px;overflow:hidden;border:2px solid var(--border);flex-shrink:0;position:relative}
-  .campo-foto-thumb img{width:100%;height:100%;object-fit:cover}
-  .campo-foto-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.8);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.55rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .btn-campo-save{width:100%;background:#27ae60;border:none;border-radius:8px;padding:14px;font-family:'Syne',sans-serif;font-size:.9rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#fff;cursor:pointer;transition:opacity .2s;margin-top:4px}
-  .btn-campo-save:hover{opacity:.85}
-  .btn-campo-save:disabled{opacity:.4;cursor:not-allowed}
-  .btn-campo-cancel{width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Syne',sans-serif;font-size:.8rem;font-weight:600;color:var(--muted);cursor:pointer;margin-top:8px}
-  /* Botón en barra nav — solo para agentes (viewer) */
-  .mnav-btn.agent-only{display:none}
-  .mnav-btn.agent-only.visible{display:flex}
+  /* ══ RESPONSIVE MÓVIL ══════════════════════════════ */
+  @media (max-width: 768px) {
+    body { padding-bottom: 56px; }
+    header {
+      height: 48px !important; min-height: 48px !important;
+      padding: 0 8px !important; gap: 5px !important;
+      flex-wrap: nowrap !important; overflow: hidden;
+    }
+    header h1 { display: none !important; }
+    .header-sep { display: none !important; }
+    .stat-pill { padding: 2px 6px !important; font-size: .6rem !important; gap: 3px !important; flex-shrink: 1; min-width: 0; }
+    .stat-pill .dot { width: 5px !important; height: 5px !important; }
+    #syncPill { display: none !important; }
+    #btnSync  { display: none !important; }
+    #btnAdd   { display: none !important; }
+    .role-badge { font-size: .6rem !important; padding: 3px 7px !important; }
+    .layout { flex-direction: column !important; }
+    .sidebar {
+      width: 100% !important; height: 0 !important;
+      overflow: hidden !important; border-right: none !important;
+      border-bottom: 1px solid var(--border);
+      transition: height .25s ease; flex-shrink: 0 !important;
+    }
+    .sidebar.mobile-open { height: 50vh !important; overflow-y: auto !important; }
+    #map { flex: 1 !important; width: 100% !important; min-height: 200px; }
+    .modal-overlay { align-items: flex-end !important; }
+    .modal {
+      width: 100% !important; max-width: 100% !important;
+      border-radius: 16px 16px 0 0 !important;
+      max-height: 90vh !important; padding: 16px !important;
+    }
+    .mobile-nav { display: block !important; }
+  }
+
+  /* ══ BARRA NAV INFERIOR ════════════════════════════ */
+  .mobile-nav {
+    display: none; position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 56px; background: var(--panel);
+    border-top: 2px solid var(--border); z-index: 1500;
+  }
+  .mobile-nav-inner { display: flex; height: 100%; }
+  .mnav-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    transition: color .15s; font-family: 'DM Sans', sans-serif; padding: 0;
+  }
+  .mnav-btn.active { color: var(--accent); }
+  .mnav-btn .mni { font-size: 1.2rem; line-height: 1; }
+  .mnav-btn .mnl { font-size: .58rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .mnav-btn.coord-only { display: none; }
+  .mnav-btn.coord-only.visible { display: flex; }
 
 </style>
 </head>
@@ -692,6 +718,8 @@ function selectCase(id) {
     map.flyTo([c.lat, c.lng], 17, {duration:0.7});
     if (markers[id]) setTimeout(()=>markers[id].openPopup(), 400);
   }
+  // En móvil, volver al mapa al seleccionar un caso
+  if (isMobile()) setTimeout(mobileShowMap, 100);
 }
 
 // ── FILTER ────────────────────────────────────────────────────────────────
@@ -918,15 +946,12 @@ function applyRole(role) {
   badge.className = 'role-badge ' + (isCoord ? 'coord' : 'viewer');
   document.getElementById('roleIcon').textContent = isCoord ? '🎯' : '👁️';
   document.getElementById('roleLabel').textContent = isCoord ? 'Coordinador' : 'Agente';
-  // Buttons: add/sync only for coord
+  // Botón agregar — header
   const addBtn  = document.getElementById('btnAdd');
   const syncBtn = document.getElementById('btnSync');
   if (addBtn)  addBtn.style.display  = isCoord ? 'inline-flex' : 'none';
   if (syncBtn) syncBtn.style.display = isCoord ? 'inline-flex' : 'none';
-  // Botón 📍 Registrar en campo — visible para agentes Y coordinador
-  const mnCampo = document.getElementById('mnBtnCampo');
-  if (mnCampo) mnCampo.classList.toggle('visible', role === 'viewer' || role === 'coord');
-  // Botón ➕ Agregar — solo coordinador
+  // Botón agregar — barra móvil
   const mnAdd = document.getElementById('mnBtnAdd');
   if (mnAdd) mnAdd.classList.toggle('visible', isCoord);
   // Popup edit/delete buttons — handled in renderMarkers via canEdit()
@@ -934,8 +959,7 @@ function applyRole(role) {
   renderList();
 }
 
-function canEdit()  { return currentRole === 'coord'; }
-function canField()  { return currentRole === 'viewer' || currentRole === 'coord'; }
+function canEdit() { return currentRole === 'coord'; }
 
 // ── Check session on load ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -947,255 +971,33 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// ── FORMULARIO DE CAMPO ───────────────────────────────────────────────────
-let campoGpsLat = null;
-let campoGpsLng = null;
-let campoFotos  = [];
+// ── MOBILE NAVIGATION ─────────────────────────────────────────────────────
+function isMobile() { return window.innerWidth <= 768; }
 
-function openCampo() {
-  if (!canField()) return;
-  campoGpsLat = null;
-  campoGpsLng = null;
-  campoFotos  = [];
-  // Reset form
-  document.getElementById('cf-plate').value = '';
-  document.getElementById('cf-agent').value = '';
-  document.getElementById('cf-obs').value   = '';
-  document.getElementById('cf-foto').value  = '';
-  document.getElementById('campoFotoPreview').innerHTML = '';
-  document.getElementById('btnCampoSave').disabled = true;
-  // Open overlay
-  const ov = document.getElementById('campoOverlay');
-  ov.classList.add('open');
-  // Start GPS
-  campoStartGps();
+function mobileShowMap() {
+  if (!isMobile()) return;
+  document.querySelector('.sidebar').classList.remove('mobile-open');
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnBtnMapa').classList.add('active');
+  setTimeout(() => map.invalidateSize(), 50);
 }
 
-function closeCampo() {
-  document.getElementById('campoOverlay').classList.remove('open');
+function mobileShowList() {
+  if (!isMobile()) return;
+  document.querySelector('.sidebar').classList.add('mobile-open');
+  document.querySelectorAll('.mnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnBtnCasos').classList.add('active');
 }
 
-function campoStartGps() {
-  const box   = document.getElementById('campoGpsBox');
-  const label = document.getElementById('campoGpsLabel');
-  const coords= document.getElementById('campoGpsCoords');
-  box.className = 'gps-box loading';
-  label.textContent = 'Obteniendo ubicación GPS...';
-  coords.textContent = '';
-
-  if (!navigator.geolocation) {
-    box.className = 'gps-box error';
-    label.textContent = 'GPS no disponible en este dispositivo';
-    return;
+window.addEventListener('resize', () => {
+  if (!isMobile()) {
+    const sb = document.querySelector('.sidebar');
+    sb.classList.remove('mobile-open');
+    sb.style.height = '';
   }
-
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      campoGpsLat = pos.coords.latitude.toFixed(6);
-      campoGpsLng = pos.coords.longitude.toFixed(6);
-      const acc   = Math.round(pos.coords.accuracy);
-      box.className = 'gps-box ok';
-      label.textContent = '✅ Ubicación capturada';
-      coords.textContent = `${campoGpsLat}, ${campoGpsLng}  ·  ±${acc}m`;
-      campoCheckReady();
-    },
-    err => {
-      box.className = 'gps-box error';
-      label.textContent = '⚠️ GPS no disponible — ingresá coords manualmente';
-      coords.textContent = 'Activá el GPS o escribí las coordenadas abajo';
-      // Mostrar campos manuales de coordenadas
-      document.getElementById('campoManualCoords').style.display = 'grid';
-    },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-  );
-}
-
-async function campoFotoSelected(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const b64 = await compressImage(file, 600, 0.65);
-  campoFotos = [b64]; // solo 1 foto en campo
-  const prev = document.getElementById('campoFotoPreview');
-  prev.innerHTML = `
-    <div class="campo-foto-thumb">
-      <img src="${b64}" alt="foto">
-      <button class="campo-foto-del" onclick="campoBorrarFoto()">✕</button>
-    </div>`;
-  // Ocultar botón de foto y mostrar miniatura
-  document.getElementById('campoFotoBtn').style.display = 'none';
-  campoCheckReady();
-}
-
-function campoBorrarFoto() {
-  campoFotos = [];
-  document.getElementById('campoFotoPreview').innerHTML = '';
-  document.getElementById('campoFotoBtn').style.display = 'block';
-  document.getElementById('cf-foto').value = '';
-  campoCheckReady();
-}
-
-function campoCheckReady() {
-  const plate = document.getElementById('cf-plate').value.trim();
-  const ready = campoGpsLat !== null && plate.length > 0;
-  document.getElementById('btnCampoSave').disabled = !ready;
-}
-
-// Escuchar cambio en patente para habilitar botón
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('cf-plate').addEventListener('input', campoCheckReady);
 });
-
-async function saveCampo() {
-  const plate = document.getElementById('cf-plate').value.trim().toUpperCase();
-  if (!plate)          { alert('Ingresá el dominio del vehículo.'); return; }
-  if (!campoGpsLat)    { alert('Esperá a que el GPS obtenga la ubicación.
-
-Si el GPS no responde, verificá que esté activado en el celular.'); return; }
-
-  document.getElementById('btnCampoSave').disabled = true;
-  document.getElementById('btnCampoSave').textContent = '⏳ Guardando...';
-
-  // Intentar obtener dirección aproximada via reverse geocoding (gratuito)
-  let addr = `${campoGpsLat}, ${campoGpsLng}`;
-  try {
-    const geoRes = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${campoGpsLat}&lon=${campoGpsLng}&format=json&accept-language=es`,
-      { headers: { 'User-Agent': 'VehiculosColon/1.0' } }
-    );
-    const geoJson = await geoRes.json();
-    if (geoJson && geoJson.address) {
-      const a = geoJson.address;
-      const road   = a.road || a.pedestrian || a.footway || '';
-      const number = a.house_number || '';
-      const suburb = a.suburb || a.neighbourhood || a.quarter || '';
-      addr = [road, number, suburb].filter(Boolean).join(' ').trim() || addr;
-    }
-  } catch(e) { /* sin internet — usar coords */ }
-
-  const maxId = cases.length ? Math.max(...cases.map(c => c.id)) : 0;
-  const newCase = {
-    id:     maxId + 1,
-    plate,
-    addr,
-    lat:    parseFloat(campoGpsLat),
-    lng:    parseFloat(campoGpsLng),
-    agent:  document.getElementById('cf-agent').value || '',
-    zone:   '',
-    notif:  new Date().toISOString().split('T')[0],
-    status: 'ACTIVO',
-    obs:    document.getElementById('cf-obs').value.trim(),
-    photos: [...campoFotos],
-    fromField: true
-  };
-
-  cases.push(newCase);
-
-  try {
-    await save();
-    closeCampo();
-    renderMarkers();
-    renderList();
-    setTimeout(() => {
-      selectCase(newCase.id);
-      mobileShowMap();
-    }, 200);
-  } catch(e) {
-    alert('Error al guardar. Los datos quedaron en caché local.');
-    document.getElementById('btnCampoSave').disabled = false;
-    document.getElementById('btnCampoSave').textContent = '✅ Registrar en el mapa';
-  }
-}
-
-// Cerrar campo tocando el overlay
-document.getElementById('campoOverlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('campoOverlay')) closeCampo();
-});
-
-
-function campoManualCoordsUpdate() {
-  const lat = parseFloat(document.getElementById('cf-lat').value);
-  const lng = parseFloat(document.getElementById('cf-lng').value);
-  if (!isNaN(lat) && !isNaN(lng)) {
-    campoGpsLat = lat.toFixed(6);
-    campoGpsLng = lng.toFixed(6);
-    document.getElementById('campoGpsLabel').textContent = '✅ Coordenadas ingresadas manualmente';
-    document.getElementById('campoGpsBox').className = 'gps-box ok';
-    campoCheckReady();
-  }
-}
 
 </script>
-
-<!-- FORMULARIO DE CAMPO — AGENTES -->
-<div class="campo-overlay" id="campoOverlay">
-  <div class="campo-sheet">
-    <h2>📍 Registrar vehículo</h2>
-    <p class="campo-sub">Completá los datos desde el lugar</p>
-
-    <!-- GPS STATUS -->
-    <div class="gps-box loading" id="campoGpsBox">
-      <span class="gps-icon">📡</span>
-      <div>
-        <b id="campoGpsLabel">Obteniendo ubicación GPS...</b><br>
-        <span id="campoGpsCoords" style="font-size:.72rem;opacity:.7"></span>
-      </div>
-    </div>
-
-    <!-- COORDS MANUALES (solo si GPS falla) -->
-    <div id="campoManualCoords" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="form-row" style="margin-bottom:0">
-        <label>Latitud</label>
-        <input type="number" id="cf-lat" placeholder="-33.8965" step="0.000001"
-          oninput="campoManualCoordsUpdate()">
-      </div>
-      <div class="form-row" style="margin-bottom:0">
-        <label>Longitud</label>
-        <input type="number" id="cf-lng" placeholder="-61.1000" step="0.000001"
-          oninput="campoManualCoordsUpdate()">
-      </div>
-    </div>
-
-    <!-- DOMINIO -->
-    <div class="form-row">
-      <label>Dominio / Patente *</label>
-      <input type="text" id="cf-plate" placeholder="AB 123 CD"
-        style="text-transform:uppercase;font-size:1.1rem;padding:12px;letter-spacing:2px"
-        oninput="this.value=this.value.toUpperCase()">
-    </div>
-
-    <!-- AGENTE -->
-    <div class="form-row">
-      <label>Tu nombre</label>
-      <select id="cf-agent" style="font-size:.9rem;padding:10px">
-        <option value="">— Seleccioná —</option>
-        <option value="Gomez">Gomez</option>
-        <option value="Gregoris">Gregoris</option>
-        <option value="Gonzalez">Gonzalez</option>
-        <option value="Almada">Almada</option>
-      </select>
-    </div>
-
-    <!-- OBSERVACIONES -->
-    <div class="form-row">
-      <label>Observación rápida</label>
-      <input type="text" id="cf-obs" placeholder="Color, marca, estado... (opcional)">
-    </div>
-
-    <!-- FOTO -->
-    <div class="campo-foto-btn" id="campoFotoBtn">
-      <input type="file" id="cf-foto" accept="image/*" capture="environment" onchange="campoFotoSelected(event)">
-      <span class="foto-icon">📸</span>
-      <p><b>Tocá para sacar foto</b><br>Se abre la cámara directamente</p>
-    </div>
-    <div class="campo-foto-preview" id="campoFotoPreview"></div>
-
-    <button class="btn-campo-save" id="btnCampoSave" onclick="saveCampo()">
-      ✅ Registrar en el mapa
-    </button>
-    <button class="btn-campo-cancel" onclick="closeCampo()">Cancelar</button>
-  </div>
-</div>
-
 <!-- PICK BANNER -->
 <div class="pick-banner" id="pickBanner">
   📍 HACÉ CLIC EN EL MAPA PARA MARCAR LA UBICACIÓN
@@ -1213,9 +1015,6 @@ function campoManualCoordsUpdate() {
     <button class="mnav-btn" id="mnBtnCasos" onclick="mobileShowList()">
       <span class="mni">📋</span><span class="mnl">Casos</span>
     </button>
-    <button class="mnav-btn agent-only" id="mnBtnCampo" onclick="openCampo()">
-      <span class="mni">📍</span><span class="mnl">Registrar</span>
-    </button>
     <button class="mnav-btn coord-only" id="mnBtnAdd" onclick="openModal()">
       <span class="mni">➕</span><span class="mnl">Agregar</span>
     </button>
@@ -1227,3 +1026,4 @@ function campoManualCoordsUpdate() {
 
 </body>
 </html>
+
