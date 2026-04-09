@@ -923,12 +923,19 @@ function applyRole(role) {
   const syncBtn = document.getElementById('btnSync');
   if (addBtn)  addBtn.style.display  = isCoord ? 'inline-flex' : 'none';
   if (syncBtn) syncBtn.style.display = isCoord ? 'inline-flex' : 'none';
+  // Botón 📍 Registrar en campo — visible para agentes Y coordinador
+  const mnCampo = document.getElementById('mnBtnCampo');
+  if (mnCampo) mnCampo.classList.toggle('visible', role === 'viewer' || role === 'coord');
+  // Botón ➕ Agregar — solo coordinador
+  const mnAdd = document.getElementById('mnBtnAdd');
+  if (mnAdd) mnAdd.classList.toggle('visible', isCoord);
   // Popup edit/delete buttons — handled in renderMarkers via canEdit()
   renderMarkers();
   renderList();
 }
 
-function canEdit() { return currentRole === 'coord'; }
+function canEdit()  { return currentRole === 'coord'; }
+function canField()  { return currentRole === 'viewer' || currentRole === 'coord'; }
 
 // ── Check session on load ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -946,6 +953,7 @@ let campoGpsLng = null;
 let campoFotos  = [];
 
 function openCampo() {
+  if (!canField()) return;
   campoGpsLat = null;
   campoGpsLng = null;
   campoFotos  = [];
@@ -993,8 +1001,10 @@ function campoStartGps() {
     },
     err => {
       box.className = 'gps-box error';
-      label.textContent = '⚠️ No se pudo obtener GPS — reintentá';
-      coords.textContent = 'Verificá que el GPS esté activado';
+      label.textContent = '⚠️ GPS no disponible — ingresá coords manualmente';
+      coords.textContent = 'Activá el GPS o escribí las coordenadas abajo';
+      // Mostrar campos manuales de coordenadas
+      document.getElementById('campoManualCoords').style.display = 'grid';
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
@@ -1038,7 +1048,9 @@ document.addEventListener('DOMContentLoaded', () => {
 async function saveCampo() {
   const plate = document.getElementById('cf-plate').value.trim().toUpperCase();
   if (!plate)          { alert('Ingresá el dominio del vehículo.'); return; }
-  if (!campoGpsLat)    { alert('Esperá a que el GPS obtenga la ubicación.'); return; }
+  if (!campoGpsLat)    { alert('Esperá a que el GPS obtenga la ubicación.
+
+Si el GPS no responde, verificá que esté activado en el celular.'); return; }
 
   document.getElementById('btnCampoSave').disabled = true;
   document.getElementById('btnCampoSave').textContent = '⏳ Guardando...';
@@ -1099,6 +1111,19 @@ document.getElementById('campoOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('campoOverlay')) closeCampo();
 });
 
+
+function campoManualCoordsUpdate() {
+  const lat = parseFloat(document.getElementById('cf-lat').value);
+  const lng = parseFloat(document.getElementById('cf-lng').value);
+  if (!isNaN(lat) && !isNaN(lng)) {
+    campoGpsLat = lat.toFixed(6);
+    campoGpsLng = lng.toFixed(6);
+    document.getElementById('campoGpsLabel').textContent = '✅ Coordenadas ingresadas manualmente';
+    document.getElementById('campoGpsBox').className = 'gps-box ok';
+    campoCheckReady();
+  }
+}
+
 </script>
 
 <!-- FORMULARIO DE CAMPO — AGENTES -->
@@ -1113,6 +1138,20 @@ document.getElementById('campoOverlay').addEventListener('click', e => {
       <div>
         <b id="campoGpsLabel">Obteniendo ubicación GPS...</b><br>
         <span id="campoGpsCoords" style="font-size:.72rem;opacity:.7"></span>
+      </div>
+    </div>
+
+    <!-- COORDS MANUALES (solo si GPS falla) -->
+    <div id="campoManualCoords" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="form-row" style="margin-bottom:0">
+        <label>Latitud</label>
+        <input type="number" id="cf-lat" placeholder="-33.8965" step="0.000001"
+          oninput="campoManualCoordsUpdate()">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label>Longitud</label>
+        <input type="number" id="cf-lng" placeholder="-61.1000" step="0.000001"
+          oninput="campoManualCoordsUpdate()">
       </div>
     </div>
 
